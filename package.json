@@ -1,0 +1,19 @@
+{
+  "name": "photo-gallery",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "add": "node scripts/add.mjs",
+    "upload": "node --env-file-if-exists=.env scripts/upload.mjs",
+    "deploy": "node --env-file-if-exists=.env scripts/deploy.mjs",
+    "publish": "npm run upload && npm run deploy",
+    "preview": "node scripts/preview.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1146.0",
+    "@aws-sdk/lib-storage": "^3.1146.0",
+    "archiver": "^8.0.0",
+    "sharp": "^0.35.5"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+output/
+.env
+.DS_Store
+# 原始照片資料夾不要放進 git（照片放在 R2）
+20*/
+albums.json

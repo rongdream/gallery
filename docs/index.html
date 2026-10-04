@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Noto+Serif+TC:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+<header class="top"><a class="brand" id="brand" href="./"></a><small id="tag"></small></header>
+<main id="cards" class="cards"></main>
+<footer id="foot"></footer>
+<script>
+(async () => {
+  const [site, albums] = await Promise.all([getJSON('data/site.json'), getJSON('data/albums.json')]);
+  document.title = site.siteName + ' — ' + site.tagline;
+  brand.textContent = site.siteName; tag.textContent = site.tagline;
+  foot.textContent = '© ' + new Date().getFullYear() + ' ' + site.siteName + (site.contact ? ' · ' + site.contact : '');
+  if (!albums.length) { cards.outerHTML = '<p class="empty">作品整理中，敬請期待。</p>'; return; }
+  const covers = await Promise.all(albums.map((a) => getJSON(`data/${a.slug}.json`).then((m) => m.photos.find((p) => p.name === a.cover) || m.photos[0])));
+  cards.innerHTML = albums.map((a, i) => `<a class="card" href="album.html?a=${a.slug}"><div class="ph"><img loading="lazy" src="${url.thumb(a.slug, covers[i])}" alt=""></div><h2></h2><p>${fmtDate(a.date)}</p></a>`).join('');
+  cards.querySelectorAll('h2').forEach((h, i) => (h.textContent = albums[i].title));
+})();
+</script>
+</body>
+</html>
