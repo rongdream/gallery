@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { OUTPUT } from './lib.mjs';
+import { OUTPUT, loadAlbums } from './lib.mjs';
 
 const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } = process.env;
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) {
@@ -28,7 +28,15 @@ function* walk(dir) {
 }
 
 // 縮圖放在 GitHub Pages（有 CDN、比 r2.dev 快），不上傳到 R2
-const files = [...walk(OUTPUT)].filter((p) => !p.includes(`${path.sep}thumb${path.sep}`)).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
+// 不開放下載的相簿（作品集）只上傳瀏覽用的 view/，不上傳原檔、小檔與 ZIP
+const noDl = new Set(loadAlbums().filter((a) => a.downloads === false).map((a) => a.slug));
+const keep = (p) => {
+  const rel = path.relative(OUTPUT, p).split(path.sep);
+  if (rel[1] === 'thumb') return false;
+  if (noDl.has(rel[0]) && rel[1] !== 'view') return false;
+  return true;
+};
+const files = [...walk(OUTPUT)].filter(keep).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
 console.log(`共 ${files.length} 個檔案，檢查哪些需要上傳…`);
 
 let up = 0, skip = 0, i = 0, bytes = 0;

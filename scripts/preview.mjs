@@ -19,7 +19,7 @@ function saveAlbum(slug, f) {
   const m = JSON.parse(fs.readFileSync(mfile, 'utf8'));
   const patch = {};
   if (typeof f.title === 'string' && f.title.trim()) patch.title = f.title.trim().slice(0, 100);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) patch.date = f.date;
+  if (f.date === '' || /^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) patch.date = f.date;
   if (['public', 'private'].includes(f.visibility)) patch.visibility = f.visibility;
   if (m.photos.some((p) => p.name === f.cover)) patch.cover = f.cover;
   if (['frame', 'full'].includes(f.coverStyle)) patch.coverStyle = f.coverStyle;

@@ -24,11 +24,11 @@ export function saveAlbums(list) {
 export function rebuildIndex() {
   const pub = loadAlbums()
     .filter((a) => a.visibility === 'public')
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || (b.date || '').localeCompare(a.date || ''))
     .map((a) => {
       const m = JSON.parse(fs.readFileSync(path.join(SITE_DATA, `${a.slug}.json`), 'utf8'));
       const c = m.photos.find((p) => p.name === a.cover) || m.photos[0];
-      return { slug: a.slug, title: a.title, date: a.date, count: m.count, coverBase: c.base, w: c.w, h: c.h, coverPos: a.coverPos ?? 50 };
+      return { slug: a.slug, title: a.title, date: a.date || '', count: m.count, coverBase: c.base, w: c.w, h: c.h, coverPos: a.coverPos ?? 50 };
     });
   fs.mkdirSync(SITE_DATA, { recursive: true });
   fs.writeFileSync(path.join(SITE_DATA, 'albums.json'), JSON.stringify(pub));

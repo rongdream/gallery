@@ -25,7 +25,7 @@ button{font-family:inherit}
 .cover{position:relative;min-height:calc(100svh - var(--bar));display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden}
 .cover.frame{padding:5vh 24px 12vh}
 .cover .stack{display:flex;align-items:center;gap:36px}
-.cover .vt{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.68rem;letter-spacing:.24em;opacity:.85;white-space:nowrap}
+.cover .vt{writing-mode:vertical-rl;font-size:.68rem;letter-spacing:.24em;opacity:.85;white-space:nowrap}
 .cover .ph{display:block;max-height:70vh;max-width:min(46vw,640px);width:auto;height:auto;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 .cover .tt{min-width:200px;max-width:300px}
 .cover h1{font-family:var(--serif);font-weight:400;font-size:clamp(1.4rem,2.4vw,1.9rem);letter-spacing:.1em;line-height:1.5;margin:0}

@@ -30,7 +30,8 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   try { await load(); }
   catch { document.body.innerHTML = '<p class="empty">找不到這本相簿，請確認網址是否正確。</p>'; return; }
   const P = m.photos;
-  const hasDL = m.zips.web || m.zips.original;
+  const canDL = m.downloads !== false;
+  const hasDL = canDL && (m.zips.web || m.zips.original);
   const dl = [];
   if (m.zips.web) dl.push(`<a href="${url.zip(slug, m.zips.web.file)}" download>全部照片・小檔 ZIP<span>${fmtSize(m.zips.web.size)}</span></a>`);
   if (m.zips.original) dl.push(`<a href="${url.zip(slug, m.zips.original.file)}" download>全部照片・原檔 ZIP<span>${fmtSize(m.zips.original.size)}</span></a>`);
@@ -62,7 +63,8 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
       const ph = c.querySelector('.ph'); const im = new Image(); im.onload = () => (ph.src = im.src); im.src = url.view(slug, cp.base);
     }
     c.querySelector('h1').textContent = m.title;
-    c.querySelector('.dt').textContent = fmtDate(m.date);
+    c.querySelector('.dt').textContent = fmtDate(m.date || '');
+    if (!m.date) { c.querySelector('.dt').style.display = 'none'; c.querySelector('hr').style.display = 'none'; }
     $('sect').querySelector('h2').textContent = m.title;
     $('sect').querySelector('p').textContent = `${m.count} PHOTOS`;
   }
@@ -100,7 +102,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   let cur = 0;
   const lb = $('lb'), big = $('big');
   $('prev').innerHTML = ICON.prev; $('next').innerHTML = ICON.next;
-  $('lbTools').innerHTML = `${ADMIN ? '<button class="tb" id="setCover">★ 設為封面</button>' : ''}<button class="tb opt" id="dlSmall"></button><a class="tb" id="dlOrig"></a><button class="x" id="closeLb" aria-label="關閉">${ICON.x}</button>`;
+  $('lbTools').innerHTML = `${ADMIN ? '<button class="tb" id="setCover">★ 設為封面</button>' : ''}${canDL ? '<button class="tb opt" id="dlSmall"></button><a class="tb" id="dlOrig"></a>' : ''}<button class="x" id="closeLb" aria-label="關閉">${ICON.x}</button>`;
   const preload = (i) => { const p = P[(i + P.length) % P.length]; new Image().src = url.view(slug, p.base); };
   function show(i) {
     cur = (i + P.length) % P.length;
@@ -110,9 +112,11 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
     im.onload = () => { if (mine === cur) big.src = im.src; };
     im.src = url.view(slug, p.base);
     $('cnt').textContent = `${cur + 1} / ${P.length}`;
-    $('dlOrig').href = url.orig(slug, p.name); $('dlOrig').setAttribute('download', p.name);
-    $('dlOrig').textContent = `下載原檔 ${fmtSize(p.origSize)}`;
-    $('dlSmall').textContent = `下載小檔 ${Math.round(p.webSize / 1024)} KB`;
+    if (canDL) {
+      $('dlOrig').href = url.orig(slug, p.name); $('dlOrig').setAttribute('download', p.name);
+      $('dlOrig').textContent = `下載原檔 ${fmtSize(p.origSize)}`;
+      $('dlSmall').textContent = `下載小檔 ${Math.round(p.webSize / 1024)} KB`;
+    }
     preload(cur + 1); preload(cur + 2); preload(cur - 1);
   }
   function openLb(i) { lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); }
@@ -127,7 +131,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   let sx = null;
   lb.addEventListener('touchstart', (e) => (sx = e.touches[0].clientX), { passive: true });
   lb.addEventListener('touchend', (e) => { if (sx === null) return; const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 50) show(cur + (d < 0 ? 1 : -1)); sx = null; });
-  $('dlSmall').onclick = async () => {
+  if (canDL) $('dlSmall').onclick = async () => {
     const p = P[cur];
     try {
       const blob = await fetch(url.web(slug, p.base)).then((r) => r.blob());

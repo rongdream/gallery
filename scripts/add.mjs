@@ -54,11 +54,14 @@ const folderName = path.basename(src);
 const isPrivate = !!flags.private;
 const albums = loadAlbums();
 // 以來源資料夾辨識既有相簿，重跑時沿用同一個網址
-const existing = albums.find((a) => a.source === src);
+const existing = albums.find((a) => a.source === src) || (flags.slug && albums.find((a) => a.slug === flags.slug));
 const slug = flags.slug || existing?.slug || (isPrivate ? crypto.randomBytes(6).toString('hex') : 'album-' + crypto.randomBytes(3).toString('hex'));
 if (!/^[a-z0-9][a-z0-9-]*$/i.test(slug)) { console.error('--slug 只能用英文、數字與減號'); process.exit(1); }
 const dm = folderName.match(/^(\d{4})(\d{2})(\d{2})/);
-const date = flags.date || existing?.date || (dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : new Date(fs.statSync(files[0]).mtime).toISOString().slice(0, 10));
+const date = flags.date === 'none' ? '' : (flags.date || existing?.date) ?? (dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : new Date(fs.statSync(files[0]).mtime).toISOString().slice(0, 10));
+// 是否開放訪客下載（作品集建議關閉：不會上傳原檔與 ZIP）。--no-download 關閉、--download 開啟
+const downloads = flags['no-download'] ? false : flags.download ? true : (existing?.downloads ?? true);
+const order = flags.order !== undefined ? Number(flags.order) : existing?.order;
 const title = flags.title || existing?.title || folderName;
 
 const outDir = path.join(OUTPUT, slug);
@@ -134,16 +137,18 @@ function zipTo(zipPath, entries) {
 
 const zips = {};
 const webZip = path.join(outDir, `${slug}-web.zip`);
-console.log('打包小檔 ZIP …');
-await zipTo(webZip, photos.map((p) => ({ path: path.join(webDir, p.base + '.jpg'), name: p.base + '.jpg' })));
-zips.web = { file: path.basename(webZip), size: fs.statSync(webZip).size };
+if (downloads) {
+  console.log('打包小檔 ZIP …');
+  await zipTo(webZip, photos.map((p) => ({ path: path.join(webDir, p.base + '.jpg'), name: p.base + '.jpg' })));
+  zips.web = { file: path.basename(webZip), size: fs.statSync(webZip).size };
+}
 
 const origZip = path.join(outDir, `${slug}-original.zip`);
-if (flags['zip-original']) {
+if (downloads && flags['zip-original']) {
   console.log('打包原檔 ZIP（檔案大，需要一點時間）…');
   await zipTo(origZip, photos.map((p) => ({ path: path.join(origDir, p.name), name: p.name })));
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };
-} else if (fs.existsSync(origZip)) {
+} else if (downloads && fs.existsSync(origZip)) {
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };
 }
 
@@ -152,7 +157,8 @@ if (!photos.some((p) => p.name === cover)) cover = photos[0].name;
 
 const visibility = flags.private ? 'private' : (existing?.visibility || 'public');
 const entry = {
-  slug, title, date, visibility, cover,
+  slug, title, date, visibility, cover, downloads,
+  ...(order !== undefined && { order }),
   coverStyle: flags['cover-style'] || existing?.coverStyle || 'frame',
   coverColor: flags['cover-color'] || existing?.coverColor || cfg.coverColor,
   coverPos: existing?.coverPos ?? 50,

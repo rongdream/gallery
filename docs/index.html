@@ -24,7 +24,7 @@
   if (!albums.length) { $('cards').outerHTML = '<p class="empty">作品整理中，敬請期待。</p>'; return; }
   $('cards').innerHTML = albums.map((a) => `<a class="card" href="album.html?a=${a.slug}">
     <div class="ph"><img loading="lazy" style="object-position:50% ${a.coverPos}%;opacity:0" onload="this.style.opacity=1" src="${url.thumb(a.slug, a.coverBase)}" alt=""></div>
-    <h2></h2><p>${fmtDate(a.date)} · ${a.count} PHOTOS</p></a>`).join('');
+    <h2></h2><p>${a.date ? fmtDate(a.date) + ' · ' : ''}${a.count} PHOTOS</p></a>`).join('');
   $('cards').querySelectorAll('h2').forEach((h, i) => (h.textContent = albums[i].title));
 })();
 </script>
