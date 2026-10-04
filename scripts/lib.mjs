@@ -32,6 +32,29 @@ export function rebuildIndex() {
     });
   fs.mkdirSync(SITE_DATA, { recursive: true });
   fs.writeFileSync(path.join(SITE_DATA, 'albums.json'), JSON.stringify(pub));
-  const { siteName, tagline, contact, brandLine } = loadConfig();
-  fs.writeFileSync(path.join(SITE_DATA, 'site.json'), JSON.stringify({ siteName, tagline, contact, brandLine }));
+  const { siteName, tagline, contact, brandLine, about } = loadConfig();
+  fs.writeFileSync(path.join(SITE_DATA, 'site.json'), JSON.stringify({ siteName, tagline, contact, brandLine, about: buildAbout(about) }));
+}
+
+// 自我介紹：整理連結格式；沒填的欄位不顯示。Instagram 可以只填帳號（例如 @abc 或 abc）
+function buildAbout(a = {}) {
+  const link = (v, base) => {
+    v = (v || '').trim();
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v)) return v;
+    if (base) return base + v.replace(/^@/, '');
+    return /\./.test(v) ? 'https://' + v : '';
+  };
+  const out = {
+    name: (a.name || '').trim(), role: (a.role || '').trim(),
+    bio: (a.bio || '').split(/\n+/).map((t) => t.trim()).filter(Boolean),
+    links: [
+      ['Instagram', link(a.instagram, 'https://www.instagram.com/')],
+      ['官網', link(a.website)],
+      ['Medium', link(a.medium, 'https://medium.com/@')],
+      ['Email', (a.email || '').trim() ? 'mailto:' + a.email.trim() : ''],
+    ].filter(([, href]) => href).map(([label, href]) => ({ label, href })),
+    photo: fs.existsSync(path.join(SITE, 'about', 'photo.jpg')) ? 'about/photo.jpg' : '',
+  };
+  return out.bio.length || out.links.length || out.name ? out : null;
 }

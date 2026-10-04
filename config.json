@@ -10,5 +10,14 @@
     "thumbWidth": 720
   },
   "brandLine": "PHOTOS BY",
-  "coverColor": "#54493c"
+  "coverColor": "#54493c",
+  "about": {
+    "name": "",
+    "role": "攝影師",
+    "bio": "",
+    "instagram": "",
+    "website": "",
+    "medium": "",
+    "email": ""
+  }
 }

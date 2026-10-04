@@ -28,11 +28,29 @@ function toast(msg) {
 function renderBar(site, { active = 'albums', tools = '' } = {}) {
   document.body.insertAdjacentHTML('afterbegin', `<header class="bar">
     <a class="brand" href="./">${site.brandLine || 'PHOTOS BY'}<b></b></a>
-    <nav><a href="./" class="${active === 'albums' ? 'on' : ''}">相簿</a></nav>
+    <nav><a href="./" class="${active === 'albums' ? 'on' : ''}">相簿</a>${site.about ? `<a href="about.html" class="${active === 'about' ? 'on' : ''}">關於</a>` : ''}</nav>
     <div class="tools">${tools}<button class="ic" id="shareBtn" title="分享連結">${ICON.share}</button></div></header>`);
   document.querySelector('.brand b').textContent = site.siteName;
   $('shareBtn').onclick = async () => {
     try { if (navigator.share) { await navigator.share({ title: document.title, url: location.href }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(location.href); toast('已複製連結'); } catch { toast(location.href); }
   };
+}
+
+// 自我介紹區塊（放在每本相簿最下方，也用在 about.html）。沒有填內容就不顯示
+function aboutHTML(site, { page = false } = {}) {
+  const a = site.about;
+  if (!a) return '';
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return `<section class="about${page ? ' page' : ''}">
+    <div class="about-in">
+      ${a.photo ? `<img class="ap" src="${a.photo}" alt="${esc(a.name || '')}">` : ''}
+      <div class="at">
+        <div class="ak">ABOUT</div>
+        ${a.name ? `<h2>${esc(a.name)}</h2>` : ''}
+        ${a.role ? `<div class="ar">${esc(a.role)}</div>` : ''}
+        ${a.bio.map((t) => `<p>${esc(t)}</p>`).join('')}
+        ${a.links.length ? `<div class="al">${a.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</div>` : ''}
+      </div>
+    </div></section>`;
 }

@@ -15,6 +15,7 @@
 <section class="cover" id="cover"></section>
 <div class="sect" id="sect"><h2></h2><p></p></div>
 <div id="grid"></div>
+<div id="about"></div>
 <footer id="foot"></footer>
 <div id="lb">
   <div class="hd"><span id="cnt"></span><div id="lbTools"></div></div>
@@ -42,6 +43,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   }
   if (m.visibility === 'private') document.querySelector('.bar nav').style.visibility = 'hidden';
   $('foot').textContent = '© ' + new Date().getFullYear() + ' ' + site.siteName;
+  $('about').innerHTML = aboutHTML(site);
 
   // 封面（框式 / 滿版）。先用縮圖秒開，再換成較大的瀏覽版
   function renderCover() {
