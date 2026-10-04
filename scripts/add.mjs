@@ -64,16 +64,18 @@ const title = flags.title || existing?.title || folderName;
 const outDir = path.join(OUTPUT, slug);
 const webDir = path.join(outDir, 'web');
 const thumbDir = path.join(outDir, 'thumb');
+const viewDir = path.join(outDir, 'view');
 const origDir = path.join(outDir, 'original');
-for (const d of [webDir, thumbDir, origDir, SITE_DATA]) fs.mkdirSync(d, { recursive: true });
+for (const d of [webDir, thumbDir, viewDir, origDir, SITE_DATA]) fs.mkdirSync(d, { recursive: true });
 
-const { webLongEdge, webQuality, thumbWidth } = cfg.images;
+const { webLongEdge, webQuality, thumbWidth, viewLongEdge, viewQuality } = cfg.images;
 const baseOf = (f) => path.basename(f, path.extname(f));
 
 async function processOne(file) {
   const base = baseOf(file);
   const webPath = path.join(webDir, base + '.jpg');
   const thumbPath = path.join(thumbDir, base + '.webp');
+  const viewPath = path.join(viewDir, base + '.webp');
   const link = path.join(origDir, path.basename(file));
   const srcMtime = fs.statSync(file).mtimeMs;
   const fresh = (p) => fs.existsSync(p) && fs.statSync(p).mtimeMs >= srcMtime;
@@ -81,6 +83,9 @@ async function processOne(file) {
   if (!fresh(webPath)) {
     await sharp(file).rotate().resize({ width: webLongEdge, height: webLongEdge, fit: 'inside', withoutEnlargement: true })
       .toColourspace('srgb').jpeg({ quality: webQuality, mozjpeg: true }).toFile(webPath);
+  }
+  if (!fresh(viewPath)) {
+    await sharp(webPath).resize({ width: viewLongEdge, height: viewLongEdge, fit: 'inside', withoutEnlargement: true }).webp({ quality: viewQuality }).toFile(viewPath);
   }
   if (!fresh(thumbPath)) {
     await sharp(webPath).resize({ width: thumbWidth, withoutEnlargement: true }).webp({ quality: 72 }).toFile(thumbPath);
@@ -145,18 +150,18 @@ if (flags['zip-original']) {
 let cover = flags.cover || existing?.cover || photos[0].name;
 if (!photos.some((p) => p.name === cover)) cover = photos[0].name;
 
-const manifest = {
-  slug, title, date,
-  visibility: isPrivate ? 'private' : (existing && !flags.private && existing.visibility) || 'public',
-  cover,
-  count: photos.length,
-  zips,
-  photos: photos.map(({ name, base, w, h, origSize, webSize }) => ({ name, base, w, h, origSize, webSize })),
+const visibility = flags.private ? 'private' : (existing?.visibility || 'public');
+const entry = {
+  slug, title, date, visibility, cover,
+  coverStyle: flags['cover-style'] || existing?.coverStyle || 'frame',
+  coverColor: flags['cover-color'] || existing?.coverColor || cfg.coverColor,
+  coverPos: existing?.coverPos ?? 50,
+  source: src,
 };
-if (flags.private) manifest.visibility = 'private';
+const manifest = { ...entry, count: photos.length, zips, photos: photos.map(({ name, base, w, h, origSize, webSize }) => ({ name, base, w, h, origSize, webSize })) };
+delete manifest.source;
 fs.writeFileSync(path.join(SITE_DATA, `${slug}.json`), JSON.stringify(manifest));
 
-const entry = { slug, title, date, visibility: manifest.visibility, cover, source: src };
 const idx = albums.findIndex((a) => a.slug === slug);
 if (idx >= 0) albums[idx] = entry; else albums.push(entry);
 saveAlbums(albums);
@@ -166,6 +171,6 @@ const mb = (n) => (n / 1048576).toFixed(0) + 'MB';
 const totalWeb = photos.reduce((s, p) => s + p.webSize, 0);
 const totalOrig = photos.reduce((s, p) => s + p.origSize, 0);
 console.log(`\n✔ 相簿「${title}」已建立`);
-console.log(`  網址代號：${slug}（${manifest.visibility === 'private' ? '私人，不會出現在首頁' : '公開，會出現在首頁'}）`);
+console.log(`  網址代號：${slug}（${visibility === 'private' ? '私人，不會出現在首頁' : '公開，會出現在首頁'}）`);
 console.log(`  ${photos.length} 張；小檔平均 ${(totalWeb / photos.length / 1024).toFixed(0)}KB（共 ${mb(totalWeb)}），原檔共 ${mb(totalOrig)}`);
 console.log(`\n本機預覽：npm run preview，然後開 http://localhost:8787/album.html?a=${slug}`);

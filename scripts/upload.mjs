@@ -27,7 +27,8 @@ function* walk(dir) {
   }
 }
 
-const files = [...walk(OUTPUT)].map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
+// 縮圖放在 GitHub Pages（有 CDN、比 r2.dev 快），不上傳到 R2
+const files = [...walk(OUTPUT)].filter((p) => !p.includes(`${path.sep}thumb${path.sep}`)).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
 console.log(`共 ${files.length} 個檔案，檢查哪些需要上傳…`);
 
 let up = 0, skip = 0, i = 0, bytes = 0;

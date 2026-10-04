@@ -20,14 +20,18 @@ export function saveAlbums(list) {
   fs.writeFileSync(ALBUMS_FILE, JSON.stringify(list, null, 2));
 }
 
-// 首頁只列出公開相簿；私人相簿只能靠網址進入
+// 首頁只列出公開相簿（含封面尺寸，不必逐本讀取相簿資料）；私人相簿只能靠網址進入
 export function rebuildIndex() {
   const pub = loadAlbums()
     .filter((a) => a.visibility === 'public')
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map(({ slug, title, date, cover }) => ({ slug, title, date, cover }));
+    .map((a) => {
+      const m = JSON.parse(fs.readFileSync(path.join(SITE_DATA, `${a.slug}.json`), 'utf8'));
+      const c = m.photos.find((p) => p.name === a.cover) || m.photos[0];
+      return { slug: a.slug, title: a.title, date: a.date, count: m.count, coverBase: c.base, w: c.w, h: c.h, coverPos: a.coverPos ?? 50 };
+    });
   fs.mkdirSync(SITE_DATA, { recursive: true });
   fs.writeFileSync(path.join(SITE_DATA, 'albums.json'), JSON.stringify(pub));
-  const { siteName, tagline, contact } = loadConfig();
-  fs.writeFileSync(path.join(SITE_DATA, 'site.json'), JSON.stringify({ siteName, tagline, contact }));
+  const { siteName, tagline, contact, brandLine } = loadConfig();
+  fs.writeFileSync(path.join(SITE_DATA, 'site.json'), JSON.stringify({ siteName, tagline, contact, brandLine }));
 }

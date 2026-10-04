@@ -5,6 +5,10 @@
   "images": {
     "webLongEdge": 2048,
     "webQuality": 82,
-    "thumbWidth": 640
-  }
+    "viewLongEdge": 1800,
+    "viewQuality": 76,
+    "thumbWidth": 720
+  },
+  "brandLine": "PHOTOS BY",
+  "coverColor": "#54493c"
 }
