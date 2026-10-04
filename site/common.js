@@ -49,7 +49,7 @@ function aboutHTML(site, { page = false } = {}) {
         <div class="ak">ABOUT</div>
         ${a.name ? `<h2>${esc(a.name)}</h2>` : ''}
         ${a.role ? `<div class="ar">${esc(a.role)}</div>` : ''}
-        ${a.bio.map((t) => `<p>${esc(t)}</p>`).join('')}
+        ${a.bio.map((t) => `<p>${esc(t).replace(/\n/g, '<br>')}</p>`).join('')}
         ${a.links.length ? `<div class="al">${a.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</div>` : ''}
       </div>
     </div></section>`;

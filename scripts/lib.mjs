@@ -47,11 +47,13 @@ function buildAbout(a = {}) {
   };
   const out = {
     name: (a.name || '').trim(), role: (a.role || '').trim(),
-    bio: (a.bio || '').split(/\n+/).map((t) => t.trim()).filter(Boolean),
+    // 空一行＝新段落；同一段內的換行會保留
+    bio: (a.bio || '').split(/\n\s*\n/).map((t) => t.split('\n').map((x) => x.trim()).filter(Boolean).join('\n')).filter(Boolean),
     links: [
-      ['Instagram', link(a.instagram, 'https://www.instagram.com/')],
       ['官網', link(a.website)],
-      ['Medium', link(a.medium, 'https://medium.com/@')],
+      ['Instagram', link(a.instagram, 'https://www.instagram.com/')],
+      ['LINE', link(a.line)],
+      ['部落格', link(a.medium, 'https://medium.com/@')],
       ['Email', (a.email || '').trim() ? 'mailto:' + a.email.trim() : ''],
     ].filter(([, href]) => href).map(([label, href]) => ({ label, href })),
     photo: fs.existsSync(path.join(SITE, 'about', 'photo.jpg')) ? 'about/photo.jpg' : '',

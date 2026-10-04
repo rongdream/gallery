@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+<div id="main"></div>
+<footer id="foot"></footer>
+<script>
+(async () => {
+  const site = await getJSON('data/site.json');
+  document.title = '關於 — ' + site.siteName;
+  renderBar(site, { active: 'about' });
+  $('main').innerHTML = aboutHTML(site, { page: true }) || '<p class="empty">自我介紹整理中。</p>';
+  $('foot').textContent = '© ' + new Date().getFullYear() + ' ' + site.siteName;
+})();
+</script>
+</body>
+</html>
