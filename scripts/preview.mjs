@@ -3,6 +3,9 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { ROOT } from './lib.mjs';
 import { SITE, SITE_DATA, OUTPUT, loadAlbums, saveAlbums, rebuildIndex } from './lib.mjs';
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.zip': 'application/zip', '.svg': 'image/svg+xml' };
@@ -30,8 +33,31 @@ function saveAlbum(slug, f) {
   return patch;
 }
 
+const run = promisify(execFile);
+async function publish() {
+  const out = [];
+  const sh = async (cmd, args) => { const r = await run(cmd, args, { cwd: ROOT, maxBuffer: 1 << 24 }); out.push(r.stdout + r.stderr); return r; };
+  await sh('node', ['--env-file=.env', 'scripts/deploy.mjs']);
+  await sh('git', ['add', '-A']);
+  const st = await sh('git', ['status', '--porcelain']);
+  if (!st.stdout.trim()) return '沒有需要更新的內容';
+  await sh('git', ['commit', '-m', '更新相簿']);
+  await sh('git', ['push']);
+  return '已發佈，約 1 分鐘後網站更新';
+}
+
 http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
+  if (req.method === 'POST') {
+    // 只接受從本機預覽頁面發出的請求，避免其他網站偷偷呼叫
+    const o = req.headers.origin || '';
+    if (!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(o)) { res.writeHead(403); return res.end('forbidden'); }
+  }
+  if (req.method === 'POST' && u.pathname === '/api/publish') {
+    publish().then((msg) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, msg })); })
+      .catch((e) => { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: String(e.stderr || e.message).slice(0, 400) })); });
+    return;
+  }
   if (req.method === 'POST' && u.pathname === '/api/album') {
     let body = '';
     req.on('data', (c) => (body += c));

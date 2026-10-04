@@ -1,7 +1,13 @@
-node_modules/
-output/
-.env
-.DS_Store
-# 原始照片資料夾不要放進 git（照片放在 R2）
-20*/
-albums.json
+# 白名單：只有下面列出的檔案會進 git。其他一律忽略
+# （包含 .env 金鑰、output/、albums.json，以及你放進來的任何照片資料夾）
+/*
+!/.gitignore
+!/README.md
+!/config.json
+!/package.json
+!/package-lock.json
+!/.env.example
+!/docs/
+!/site/
+!/scripts/
+!/開啟編輯.command
