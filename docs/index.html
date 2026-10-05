@@ -11,6 +11,7 @@
 <script src="common.js"></script>
 </head>
 <body>
+<div id="about"></div>
 <div class="page-h"><h1>Albums</h1><p id="sub"></p></div>
 <main id="cards" class="cards"></main>
 <footer id="foot"></footer>
@@ -20,6 +21,7 @@
   document.title = site.siteName + ' — ' + site.tagline;
   renderBar(site, { active: 'albums' });
   $('sub').textContent = site.tagline;
+  $('about').innerHTML = aboutHTML(site, { page: true });
   $('foot').textContent = '© ' + new Date().getFullYear() + ' ' + site.siteName + (site.contact ? ' · ' + site.contact : '');
   if (!albums.length) { $('cards').outerHTML = '<p class="empty">作品整理中，敬請期待。</p>'; return; }
   $('cards').innerHTML = albums.map((a) => `<a class="card" href="album.html?a=${a.slug}">

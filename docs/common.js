@@ -28,7 +28,7 @@ function toast(msg) {
 function renderBar(site, { active = 'albums', tools = '' } = {}) {
   document.body.insertAdjacentHTML('afterbegin', `<header class="bar">
     <a class="brand" href="./">${site.brandLine || 'PHOTOS BY'}<b></b></a>
-    <nav><a href="./" class="${active === 'albums' ? 'on' : ''}">相簿</a>${site.about ? `<a href="about.html" class="${active === 'about' ? 'on' : ''}">關於</a>` : ''}</nav>
+    <nav><a href="./" class="${active === 'albums' ? 'on' : ''}">相簿</a></nav>
     <div class="tools">${tools}<button class="ic" id="shareBtn" title="分享連結">${ICON.share}</button></div></header>`);
   document.querySelector('.brand b').textContent = site.siteName;
   $('shareBtn').onclick = async () => {

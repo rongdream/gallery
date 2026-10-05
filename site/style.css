@@ -54,7 +54,8 @@ button{font-family:inherit}
 footer{text-align:center;color:var(--muted);font-size:.68rem;letter-spacing:.22em;padding:30px 20px 56px;text-transform:uppercase}
 /* 自我介紹 */
 .about{border-top:1px solid var(--line);padding:84px clamp(18px,4vw,40px) 90px}
-.about.page{border-top:0;padding-top:70px}
+.about.page{border-top:0;border-bottom:1px solid var(--line);padding:70px clamp(18px,4vw,40px) 76px}
+.about.page+.page-h{padding-top:70px}
 .about-in{max-width:940px;margin:0 auto;display:flex;gap:clamp(28px,5vw,64px);align-items:center}
 .about .ap{width:min(340px,40%);height:auto;flex:none;background:#f1efec}
 .about .at{flex:1;min-width:0}
