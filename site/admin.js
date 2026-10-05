@@ -16,6 +16,18 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
   #adm input[type=color]{width:56px;height:34px;border:1px solid #ccc;padding:2px;background:#fff}
   #adm input[type=range]{width:100%}
   #adm .row{display:flex;gap:8px;align-items:center}
+  #fx{position:fixed;inset:0;z-index:75;background:rgba(20,18,16,.72);display:none;align-items:center;justify-content:center;font:.85rem/1.5 -apple-system,"PingFang TC",sans-serif}
+  #fx.open{display:flex}
+  #fx .box{background:#fff;padding:20px;display:flex;gap:26px;max-width:96vw;max-height:94vh;overflow:auto}
+  #fx .big{position:relative;cursor:crosshair;line-height:0;align-self:flex-start}
+  #fx .big img{max-width:min(62vw,820px);max-height:76vh;display:block}
+  #fx .dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #c4742b,0 0 10px rgba(0,0,0,.5);pointer-events:none}
+  #fx .side{width:210px;line-height:1.6}
+  #fx h3{margin:0 0 6px;font-size:.95rem}
+  #fx .card{width:200px;aspect-ratio:4/5;background:#eee center/cover no-repeat;margin:8px 0 4px}
+  #fx .cap{color:#8a847c;font-size:.75rem;margin-bottom:12px}
+  #fx button{display:block;width:100%;margin-top:8px;padding:10px;border:1px solid #2b2926;background:#fff;cursor:pointer;font:inherit}
+  #fx button.go{background:#c4742b;border-color:#c4742b;color:#fff}
   .pickmode .it::after{content:"設為封面";position:absolute;inset:0;display:grid;place-items:center;background:rgba(196,116,43,.55);color:#fff;font:600 1rem -apple-system,"PingFang TC",sans-serif;letter-spacing:.1em;opacity:0;transition:opacity .15s}
   .pickmode .it:hover::after{opacity:1}`;
   document.head.append(st);
@@ -24,8 +36,10 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
   bar.id = 'adm-bar';
   bar.innerHTML = `<span class="lab">✎ 編輯模式（只有你看得到）</span>
     <button id="b-pick">① 換封面照片</button>
-    <button id="b-set">② 封面樣式／標題</button>
-    <button id="b-pub" class="go">③ 發佈到網站</button>`;
+    <button id="b-port" style="display:none">只看直式：關</button>
+    <button id="b-focus">② 封面焦點</button>
+    <button id="b-set">③ 樣式／標題</button>
+    <button id="b-pub" class="go">④ 發佈到網站</button>`;
   document.body.append(bar);
 
   const panel = document.createElement('div');
@@ -51,7 +65,7 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
   async function post(path, body) {
     return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
   }
-  async function save(patch, msg = '已儲存（還沒發佈，按③才會更新網站）') {
+  async function save(patch, msg = '已儲存（還沒發佈，按④才會更新網站）') {
     const r = await post('/api/album', { slug, ...patch });
     if (!r.ok) return toast('儲存失敗：' + r.error);
     await reload(); fill(); toast(msg);
@@ -65,14 +79,19 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
   $a('a-pos').onchange = (e) => save({ coverPos: Number(e.target.value) });
 
   // ① 換封面照片：點一下相簿裡的照片就設定好
-  const stopPick = () => { window.pickCover = null; document.body.classList.remove('pickmode'); $a('b-pick').textContent = '① 換封面照片'; $a('b-pick').classList.remove('off'); };
-  const setCover = async (p) => { stopPick(); await save({ cover: p.name }, '封面已更換（還沒發佈，按③才會更新網站）'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  let portraitOnly = false;
+  const stopPick = () => {
+    window.pickCover = null; document.body.classList.remove('pickmode', 'onlyportrait'); portraitOnly = false;
+    $a('b-pick').textContent = '① 換封面照片'; $a('b-pick').classList.remove('off');
+    $a('b-port').style.display = 'none'; $a('b-port').textContent = '只看直式：關';
+  };
+  const setCover = async (p) => { stopPick(); await save({ cover: p.name }, '封面已更換，焦點已自動偵測，可按②微調（還沒發佈，按④才會更新網站）'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $a('b-pick').onclick = () => {
     if (window.pickCover) return stopPick();
     panel.classList.remove('open');
     window.pickCover = async (i) => { const photos = (await fetch(`data/${slug}.json`).then((r) => r.json())).photos; setCover(photos[i]); };
     document.body.classList.add('pickmode');
-    $a('b-pick').textContent = '取消（請往下點選一張照片）'; $a('b-pick').classList.add('off');
+    $a('b-pick').textContent = '取消（請往下點選一張照片）'; $a('b-pick').classList.add('off'); $a('b-port').style.display = '';
     document.getElementById('grid').scrollIntoView({ behavior: 'smooth' });
     toast('請點一張照片，它就會變成封面');
   };
@@ -80,7 +99,50 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
   const sc = document.getElementById('setCover');
   if (sc) sc.onclick = async () => { const p = getCur(); closeLb(); await setCover(p); };
 
-  // ② 樣式面板
+  // 只看直式：挑封面時過濾掉橫式照片
+    $a('b-port').onclick = () => {
+    portraitOnly = !portraitOnly;
+    document.body.classList.toggle('onlyportrait', portraitOnly);
+    $a('b-port').textContent = '只看直式：' + (portraitOnly ? '開' : '關');
+  };
+
+  // ② 封面焦點：在照片上點一下，指定卡片與滿版封面「以哪裡為中心」裁切
+  const fx = document.createElement('div');
+  fx.id = 'fx';
+  fx.innerHTML = `<div class="box"><div class="big" id="fx-big"><img id="fx-img" alt=""><div class="dot" id="fx-dot"></div></div>
+    <div class="side"><h3>封面焦點</h3><div class="cap">在左邊照片上，點一下你希望「一定要留在畫面裡」的位置（例如人臉）。</div>
+    <div class="cap">相簿清單卡片的裁切預覽：</div><div class="card" id="fx-card"></div>
+    <button id="fx-auto">自動偵測</button><button class="go" id="fx-done">完成</button></div></div>`;
+  document.body.append(fx);
+  const setDot = (x, y) => {
+    $a('fx-dot').style.left = x + '%'; $a('fx-dot').style.top = y + '%';
+    $a('fx-card').style.backgroundPosition = x + '% ' + y + '%';
+  };
+  async function openFocus() {
+    const m = getAlbum();
+    const ph = (await fetch(`data/${slug}.json`).then((r) => r.json())).photos.find((p) => p.name === m.cover);
+    const u = (window.GALLERY && window.GALLERY.media || '/media') + `/${slug}/view/${encodeURIComponent(ph.base)}.webp`;
+    $a('fx-img').src = u; $a('fx-card').style.backgroundImage = `url("${u}")`;
+    setDot(m.coverX ?? 50, m.coverPos ?? 50);
+    fx.classList.add('open');
+  }
+  $a('fx-big').onclick = async (e) => {
+    const r = $a('fx-img').getBoundingClientRect();
+    const x = Math.round(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+    const y = Math.round(Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100)));
+    setDot(x, y);
+    const res = await post('/api/album', { slug, coverX: x, coverPos: y });
+    if (res.ok) { await reload(); fill(); }
+  };
+  $a('fx-auto').onclick = async () => {
+    const res = await post('/api/album', { slug, autoFocus: true });
+    if (res.ok) { await reload(); fill(); const m = getAlbum(); setDot(m.coverX ?? 50, m.coverPos ?? 50); toast('已自動偵測'); }
+  };
+  $a('fx-done').onclick = () => { fx.classList.remove('open'); toast('已儲存（還沒發佈，按④才會更新網站）'); };
+  fx.addEventListener('click', (e) => { if (e.target === fx) fx.classList.remove('open'); });
+  $a('b-focus').onclick = () => { stopPick(); panel.classList.remove('open'); openFocus(); };
+
+  // ③ 樣式面板
   $a('b-set').onclick = () => { stopPick(); panel.classList.toggle('open'); };
 
   // ③ 發佈
@@ -91,6 +153,6 @@ window.initAdmin = ({ slug, getAlbum, reload, closeLb, getCur }) => {
       const r = await post('/api/publish', {});
       toast(r.ok ? '✔ ' + r.msg : '發佈失敗：' + r.error);
     } catch { toast('發佈失敗，請確認編輯模式視窗還開著'); }
-    b.textContent = '③ 發佈到網站'; b.disabled = false;
+    b.textContent = '④ 發佈到網站'; b.disabled = false;
   };
 };

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const OUTPUT = path.join(ROOT, 'output');
@@ -28,7 +29,7 @@ export function rebuildIndex() {
     .map((a) => {
       const m = JSON.parse(fs.readFileSync(path.join(SITE_DATA, `${a.slug}.json`), 'utf8'));
       const c = m.photos.find((p) => p.name === a.cover) || m.photos[0];
-      return { slug: a.slug, title: a.title, date: a.date || '', count: m.count, coverBase: c.base, w: c.w, h: c.h, coverPos: a.coverPos ?? 50 };
+      return { slug: a.slug, title: a.title, date: a.date || '', count: m.count, coverBase: c.base, w: c.w, h: c.h, coverX: a.coverX ?? 50, coverPos: a.coverPos ?? 50 };
     });
   fs.mkdirSync(SITE_DATA, { recursive: true });
   fs.writeFileSync(path.join(SITE_DATA, 'albums.json'), JSON.stringify(pub));
@@ -59,4 +60,16 @@ function buildAbout(a = {}) {
     photo: fs.existsSync(path.join(SITE, 'about', 'photo.jpg')) ? 'about/photo.jpg' : '',
   };
   return out.bio.length || out.links.length || out.name ? out : null;
+}
+
+// 自動判斷封面的裁切中心（焦點）：用 sharp 的 attention 演算法找出畫面最「顯眼」的區域（人像、膚色、細節），
+// 並算出 4:5 卡片裁切框的中心，回傳 0–100 的百分比
+export async function autoFocus(file, tw = 400, th = 500) {
+  const meta = await sharp(file).metadata();
+  const { info } = await sharp(file).resize(tw, th, { fit: 'cover', position: sharp.strategy.attention }).toBuffer({ resolveWithObject: true });
+  const scale = Math.max(tw / meta.width, th / meta.height);
+  const rw = Math.round(meta.width * scale), rh = Math.round(meta.height * scale);
+  const L = -(info.cropOffsetLeft || 0), T = -(info.cropOffsetTop || 0);
+  const clamp = (v) => Math.min(100, Math.max(0, Math.round(v)));
+  return { x: clamp(((L + tw / 2) / rw) * 100), y: clamp(((T + th / 2) / rh) * 100) };
 }

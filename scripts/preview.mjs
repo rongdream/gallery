@@ -6,12 +6,12 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { ROOT } from './lib.mjs';
-import { SITE, SITE_DATA, OUTPUT, loadAlbums, saveAlbums, rebuildIndex } from './lib.mjs';
+import { SITE, SITE_DATA, OUTPUT, loadAlbums, saveAlbums, rebuildIndex, autoFocus } from './lib.mjs';
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.zip': 'application/zip', '.svg': 'image/svg+xml' };
 const PORT = Number(process.env.PORT) || 8787;
 
-function saveAlbum(slug, f) {
+async function saveAlbum(slug, f) {
   const albums = loadAlbums();
   const a = albums.find((x) => x.slug === slug);
   const mfile = path.join(SITE_DATA, `${slug}.json`);
@@ -25,6 +25,13 @@ function saveAlbum(slug, f) {
   if (['frame', 'full'].includes(f.coverStyle)) patch.coverStyle = f.coverStyle;
   if (/^#[0-9a-f]{6}$/i.test(f.coverColor || '')) patch.coverColor = f.coverColor;
   if (Number.isFinite(f.coverPos)) patch.coverPos = Math.min(100, Math.max(0, Math.round(f.coverPos)));
+  if (Number.isFinite(f.coverX)) patch.coverX = Math.min(100, Math.max(0, Math.round(f.coverX)));
+  // 換封面或要求自動偵測時，重新算焦點（除非這次同時手動指定了焦點）
+  if ((patch.cover && patch.cover !== a.cover || f.autoFocus) && patch.coverX === undefined) {
+    const c = m.photos.find((p) => p.name === (patch.cover || a.cover));
+    const fo = await autoFocus(path.join(OUTPUT, slug, 'web', c.base + '.jpg'));
+    patch.coverX = fo.x; patch.coverPos = fo.y;
+  }
   Object.assign(a, patch);
   Object.assign(m, patch);
   saveAlbums(albums);
@@ -61,10 +68,10 @@ http.createServer((req, res) => {
   if (req.method === 'POST' && u.pathname === '/api/album') {
     let body = '';
     req.on('data', (c) => (body += c));
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { slug, ...fields } = JSON.parse(body);
-        const patch = saveAlbum(slug, fields);
+        const patch = await saveAlbum(slug, fields);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, patch }));
       } catch (e) {

@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { ZipArchive } from 'archiver';
-import { ROOT, OUTPUT, SITE_DATA, loadAlbums, saveAlbums, rebuildIndex, loadConfig } from './lib.mjs';
+import { ROOT, OUTPUT, SITE_DATA, loadAlbums, saveAlbums, rebuildIndex, loadConfig, autoFocus } from './lib.mjs';
 
 const args = process.argv.slice(2);
 const flags = {};
@@ -155,13 +155,19 @@ if (downloads && flags['zip-original']) {
 let cover = flags.cover || existing?.cover || photos[0].name;
 if (!photos.some((p) => p.name === cover)) cover = photos[0].name;
 
+// 封面沒換、且已有焦點就沿用；否則自動偵測
+const coverBase = photos.find((p) => p.name === cover).base;
+const focus = existing && existing.cover === cover && existing.coverX !== undefined
+  ? { x: existing.coverX, y: existing.coverPos ?? 50 }
+  : await autoFocus(path.join(webDir, coverBase + '.jpg'));
 const visibility = flags.private ? 'private' : (existing?.visibility || 'public');
 const entry = {
   slug, title, date, visibility, cover, downloads,
   ...(order !== undefined && { order }),
   coverStyle: flags['cover-style'] || existing?.coverStyle || 'frame',
   coverColor: flags['cover-color'] || existing?.coverColor || cfg.coverColor,
-  coverPos: existing?.coverPos ?? 50,
+  coverX: focus.x,
+  coverPos: focus.y,
   source: src,
 };
 const manifest = { ...entry, count: photos.length, zips, photos: photos.map(({ name, base, w, h, origSize, webSize }) => ({ name, base, w, h, origSize, webSize })) };

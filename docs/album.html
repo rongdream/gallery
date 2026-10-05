@@ -55,7 +55,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
     const titleBlock = '<div class="tt"><h1></h1><hr><div class="dt"></div></div>';
     const chev = '<a class="chev" href="#sect" aria-label="往下"><svg viewBox="0 0 34 20"><path d="M1 3l16 14L33 3"/></svg></a>';
     if (m.coverStyle === 'full') {
-      c.style.background = `${m.coverColor} center ${m.coverPos ?? 50}% / cover no-repeat`;
+      c.style.background = `${m.coverColor} ${m.coverX ?? 50}% ${m.coverPos ?? 50}% / cover no-repeat`;
       c.style.backgroundImage = `url("${url.thumb(slug, cp.base)}")`;
       c.innerHTML = titleBlock + chev;
       const im = new Image(); im.onload = () => (c.style.backgroundImage = `url("${im.src}")`); im.src = url.view(slug, cp.base);
@@ -84,7 +84,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
     P.forEach((p, i) => {
       const c = cols.reduce((a, b) => (b.h < a.h ? b : a));
       const it = document.createElement('div');
-      it.className = 'it'; it.dataset.i = i; it.style.aspectRatio = `${p.w} / ${p.h}`;
+      it.className = 'it'; it.dataset.i = i; if (p.w > p.h) it.dataset.land = '1'; it.style.aspectRatio = `${p.w} / ${p.h}`;
       const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = url.thumb(slug, p.base);
       im.onload = () => im.classList.add('on');
       it.append(im); c.el.append(it); c.h += p.h / p.w;
