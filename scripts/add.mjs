@@ -146,7 +146,7 @@ if (downloads) {
 const origZip = path.join(outDir, `${slug}-original.zip`);
 if (downloads && flags['zip-original']) {
   console.log('打包原檔 ZIP（檔案大，需要一點時間）…');
-  await zipTo(origZip, photos.map((p) => ({ path: path.join(origDir, p.name), name: p.name })));
+  await zipTo(origZip, photos.map((p) => ({ path: fs.realpathSync(path.join(origDir, p.name)), name: p.name })) /* 原檔是捷徑，要解析成真實檔案才會打包到照片本身 */);
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };
 } else if (downloads && fs.existsSync(origZip)) {
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };

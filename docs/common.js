@@ -15,6 +15,7 @@ const getJSON = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(r.statu
 const ICON = {
   share: '<svg viewBox="0 0 24 24"><path d="M14 4l7 7-7 7M21 11H9a6 6 0 00-6 6v1"/></svg>',
   down: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg>',
   prev: '<svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg>',
   next: '<svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg>',
