@@ -61,8 +61,9 @@ const dm = folderName.match(/^(\d{4})(\d{2})(\d{2})/);
 const date = flags.date === 'none' ? '' : (flags.date || existing?.date) ?? (dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : new Date(fs.statSync(files[0]).mtime).toISOString().slice(0, 10));
 // 是否開放訪客下載（作品集建議關閉：不會上傳原檔與 ZIP）。--no-download 關閉、--download 開啟
 const downloads = flags['no-download'] ? false : flags.download ? true : (existing?.downloads ?? true);
-// 只開放小檔下載（不提供原檔、不上傳原檔）：--no-original
-const originals = flags['no-original'] ? false : flags.original ? true : (existing?.originals ?? true);
+// 下載內容：both＝小檔與原檔都給（預設）；small＝只給我壓縮的小檔（--no-original）；
+// original＝只給資料夾裡的檔案本身，按鈕統一叫「下載」（--original-only，適合已經自己縮小過的照片）
+const downloadMode = flags['original-only'] ? 'original' : flags['no-original'] ? 'small' : (existing?.downloadMode ?? 'both');
 const order = flags.order !== undefined ? Number(flags.order) : existing?.order;
 const title = flags.title || existing?.title || folderName;
 
@@ -139,18 +140,18 @@ function zipTo(zipPath, entries) {
 
 const zips = {};
 const webZip = path.join(outDir, `${slug}-web.zip`);
-if (downloads) {
+if (downloads && downloadMode !== 'original') {
   console.log('打包小檔 ZIP …');
   await zipTo(webZip, photos.map((p) => ({ path: path.join(webDir, p.base + '.jpg'), name: p.base + '.jpg' })));
   zips.web = { file: path.basename(webZip), size: fs.statSync(webZip).size };
 }
 
 const origZip = path.join(outDir, `${slug}-original.zip`);
-if (downloads && originals && flags['zip-original']) {
+if (downloads && downloadMode !== 'small' && (flags['zip-original'] || downloadMode === 'original')) {
   console.log('打包原檔 ZIP（檔案大，需要一點時間）…');
   await zipTo(origZip, photos.map((p) => ({ path: fs.realpathSync(path.join(origDir, p.name)), name: p.name })) /* 原檔是捷徑，要解析成真實檔案才會打包到照片本身 */);
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };
-} else if (downloads && originals && fs.existsSync(origZip)) {
+} else if (downloads && downloadMode !== 'small' && fs.existsSync(origZip)) {
   zips.original = { file: path.basename(origZip), size: fs.statSync(origZip).size };
 }
 
@@ -164,7 +165,7 @@ const focus = existing && existing.cover === cover && existing.coverX !== undefi
   : await autoFocus(path.join(webDir, coverBase + '.jpg'));
 const visibility = flags.private ? 'private' : (existing?.visibility || 'public');
 const entry = {
-  slug, title, date, visibility, cover, downloads, originals,
+  slug, title, date, visibility, cover, downloads, downloadMode,
   ...(order !== undefined && { order }),
   coverStyle: flags['cover-style'] || existing?.coverStyle || 'frame',
   coverColor: flags['cover-color'] || existing?.coverColor || cfg.coverColor,
