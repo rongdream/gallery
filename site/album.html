@@ -32,10 +32,11 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   catch { document.body.innerHTML = '<p class="empty">找不到這本相簿，請確認網址是否正確。</p>'; return; }
   const P = m.photos;
   const canDL = m.downloads !== false;
+  const canOrig = canDL && m.originals !== false;
   const hasDL = canDL && (m.zips.web || m.zips.original);
   const dl = [];
   if (m.zips.web) dl.push(`<a href="${url.zip(slug, m.zips.web.file)}" download>全部照片・小檔 ZIP<span>${fmtSize(m.zips.web.size)}</span></a>`);
-  if (m.zips.original) dl.push(`<a href="${url.zip(slug, m.zips.original.file)}" download>全部照片・原檔 ZIP<span>${fmtSize(m.zips.original.size)}</span></a>`);
+  if (canOrig && m.zips.original) dl.push(`<a href="${url.zip(slug, m.zips.original.file)}" download>全部照片・原檔 ZIP<span>${fmtSize(m.zips.original.size)}</span></a>`);
   renderBar(site, { active: 'albums', tools: (P.length > 1 ? `<button class="ic" id="playTop" title="幻燈片播放">${ICON.play}</button>` : '') + (hasDL ? `<div class="menu" id="menu"><button class="ic" id="dlBtn" title="下載">${ICON.down}</button><div class="pop">${dl.join('')}<p>單張下載：點開照片後使用上方按鈕</p></div></div>` : '') });
   if (hasDL) {
     $('dlBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.toggle('open'); };
@@ -105,7 +106,7 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
   let cur = 0;
   const lb = $('lb'), big = $('big');
   $('prev').innerHTML = ICON.prev; $('next').innerHTML = ICON.next;
-  $('lbTools').innerHTML = `${ADMIN ? '<button class="tb" id="setCover">★ 設為封面</button>' : ''}<button class="tb" id="playBtn">▶ 播放</button>${canDL ? '<button class="tb opt" id="dlSmall"></button><a class="tb" id="dlOrig"></a>' : ''}<button class="x" id="closeLb" aria-label="關閉">${ICON.x}</button>`;
+  $('lbTools').innerHTML = `${ADMIN ? '<button class="tb" id="setCover">★ 設為封面</button>' : ''}<button class="tb" id="playBtn">▶ 播放</button>${canDL ? '<button class="tb opt" id="dlSmall"></button>' : ''}${canOrig ? '<a class="tb" id="dlOrig"></a>' : ''}<button class="x" id="closeLb" aria-label="關閉">${ICON.x}</button>`;
   const preload = (i) => { const p = P[(i + P.length) % P.length]; new Image().src = url.view(slug, p.base); };
   let timer = null;
   const tick = () => { clearInterval(timer); timer = setInterval(() => show(cur + 1), 4500); };
@@ -118,11 +119,11 @@ const ADMIN = ['localhost', '127.0.0.1'].includes(location.hostname);
     im.onload = () => { if (mine === cur) big.src = im.src; };
     im.src = url.view(slug, p.base);
     $('cnt').textContent = `${cur + 1} / ${P.length}`;
-    if (canDL) {
+    if (canOrig) {
       $('dlOrig').href = url.orig(slug, p.name); $('dlOrig').setAttribute('download', p.name);
       $('dlOrig').textContent = `下載原檔 ${fmtSize(p.origSize)}`;
-      $('dlSmall').textContent = `下載小檔 ${Math.round(p.webSize / 1024)} KB`;
     }
+    if (canDL) $('dlSmall').textContent = canOrig ? `下載小檔 ${Math.round(p.webSize / 1024)} KB` : `下載照片 ${Math.round(p.webSize / 1024)} KB`;
     preload(cur + 1); preload(cur + 2); preload(cur - 1);
   }
   function openLb(i) { lb.classList.add('open'); document.body.style.overflow = 'hidden'; show(i); }

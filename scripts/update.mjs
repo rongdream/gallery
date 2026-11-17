@@ -77,15 +77,18 @@ if (f.album) {
   // ── 新相簿 ──
   console.log(`\n新相簿：${f.name}（${f.files.length} 張）\n`);
   const title = await ask('相簿標題（會顯示在網站上）：', f.name);
-  console.log('\n這本相簿是哪一種？\n  1. 作品集：公開，會出現在首頁，不開放下載（不上傳原檔）\n  2. 活動／客戶相簿：不出現在首頁，只有拿到網址的人看得到，開放下載（含原檔）');
-  kind = (await ask('請輸入 1 或 2：', '1')) === '2' ? 'client' : 'portfolio';
+  console.log('\n這本相簿是哪一種？\n  1. 作品集：公開，會出現在首頁，不開放下載（不上傳原檔）\n  2. 活動／客戶相簿（完整）：不出現在首頁，只有拿到網址的人看得到，開放下載小檔與原檔\n  3. 活動／客戶相簿（只給小檔）：同上，但只開放小檔下載（不上傳原檔，省空間）');
+  const k = await ask('請輸入 1、2 或 3：', '1');
+  kind = k === '2' ? 'client' : k === '3' ? 'clientSmall' : 'portfolio';
   let s = (await ask('網址代號（英文、數字、減號；可直接按 Enter 自動產生）：')).toLowerCase();
+  const isClient = kind !== 'portfolio';
   if (s && !/^[a-z0-9][a-z0-9-]*$/.test(s)) { console.error('代號只能用英文、數字與減號。'); process.exit(1); }
-  if (!s) s = (kind === 'client' ? '' : 'album-') + crypto.randomBytes(kind === 'client' ? 6 : 3).toString('hex');
+  if (!s) s = (isClient ? '' : 'album-') + crypto.randomBytes(isClient ? 6 : 3).toString('hex');
   if (albums.some((a) => a.slug === s)) { console.error(`代號 ${s} 已經被使用，請換一個。`); process.exit(1); }
   slug = s;
   args.push('--title', title, '--slug', slug);
   if (kind === 'client') args.push('--private', '--download', '--zip-original');
+  else if (kind === 'clientSmall') args.push('--private', '--download', '--no-original');
   else {
     const order = Math.max(0, ...albums.filter((a) => a.visibility === 'public').map((a) => a.order ?? 0)) + 1;
     args.push('--no-download', '--date', 'none', '--order', String(order));

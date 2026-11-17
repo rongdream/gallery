@@ -30,10 +30,12 @@ function* walk(dir) {
 // 縮圖放在 GitHub Pages（有 CDN、比 r2.dev 快），不上傳到 R2
 // 不開放下載的相簿（作品集）只上傳瀏覽用的 view/，不上傳原檔、小檔與 ZIP
 const noDl = new Set(loadAlbums().filter((a) => a.downloads === false).map((a) => a.slug));
+const noOrig = new Set(loadAlbums().filter((a) => a.originals === false).map((a) => a.slug));
 const keep = (p) => {
   const rel = path.relative(OUTPUT, p).split(path.sep);
   if (rel[1] === 'thumb') return false;
   if (noDl.has(rel[0]) && rel[1] !== 'view') return false;
+  if (noOrig.has(rel[0]) && (rel[1] === 'original' || /-original\.zip$/.test(rel[1]))) return false;
   return true;
 };
 const files = [...walk(OUTPUT)].filter(keep).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
