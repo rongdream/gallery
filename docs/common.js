@@ -28,9 +28,10 @@ function toast(msg) {
 // 頂端列。active: 'albums'；tools: 額外放在右側的 HTML
 function renderBar(site, { active = 'albums', tools = '' } = {}) {
   document.body.insertAdjacentHTML('afterbegin', `<header class="bar">
-    <a class="brand" href="./">${site.brandLine || 'PHOTOS BY'}<b></b></a>
+    <a class="brand" href="./"><span id="brandLine"></span><b></b></a>
     <nav><a href="./" class="${active === 'albums' ? 'on' : ''}">相簿</a></nav>
     <div class="tools">${tools}<button class="ic" id="shareBtn" title="分享連結">${ICON.share}</button></div></header>`);
+  $('brandLine').textContent = site.brandLine || 'PHOTOS BY';
   document.querySelector('.brand b').textContent = site.siteName;
   $('shareBtn').onclick = async () => {
     try { if (navigator.share) { await navigator.share({ title: document.title, url: location.href }); return; } } catch { return; }
@@ -51,7 +52,7 @@ function aboutHTML(site, { page = false } = {}) {
         ${a.name ? `<h2>${esc(a.name)}</h2>` : ''}
         ${a.role ? `<div class="ar">${esc(a.role)}</div>` : ''}
         ${a.bio.map((t) => `<p>${esc(t).replace(/\n/g, '<br>')}</p>`).join('')}
-        ${a.links.length ? `<div class="al">${a.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</div>` : ''}
+        ${a.links.length ? `<div class="al">${a.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer">${esc(l.label)}</a>`).join('')}</div>` : ''}
       </div>
     </div></section>`;
 }

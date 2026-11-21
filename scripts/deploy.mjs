@@ -14,6 +14,12 @@ fs.rmSync(dest, { recursive: true, force: true });
 fs.cpSync(SITE, dest, { recursive: true, filter: (p) => !p.endsWith('admin.js') });
 // 縮圖隨網站一起發佈到 GitHub Pages：docs/t/<相簿>/<檔名>.webp
 for (const a of loadAlbums()) fs.cpSync(path.join(OUTPUT, a.slug, 'thumb'), path.join(dest, 't', a.slug), { recursive: true });
+// 內容安全政策（CSP）：只允許載入自己的網站、R2 照片來源與 Google 字型
+const mediaOrigin = new URL(media).origin;
+for (const f of ['index.html', 'album.html']) {
+  const fp = path.join(dest, f);
+  fs.writeFileSync(fp, fs.readFileSync(fp, 'utf8').replaceAll('__MEDIA__', mediaOrigin));
+}
 fs.writeFileSync(path.join(dest, 'config.js'), `window.GALLERY = { media: ${JSON.stringify(media)} };\n`);
 fs.writeFileSync(path.join(dest, '.nojekyll'), '');
 console.log('✔ 網站已打包到 docs/ 。接著 git add / commit / push 就會更新 GitHub Pages。');

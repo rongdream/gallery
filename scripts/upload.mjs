@@ -40,7 +40,10 @@ const keep = (p) => {
   if (modeOf[rel[0]] === 'original' && (rel[1] === 'web' || /-web\.zip$/.test(rel[1]))) return false;
   return true;
 };
-const files = [...walk(OUTPUT)].filter(keep).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size }));
+// --force <相簿代號>：該相簿所有檔案一律重傳（照片內容改過但大小剛好相同時使用）
+const forceIdx = process.argv.indexOf('--force');
+const forceSlug = forceIdx > 0 ? process.argv[forceIdx + 1] : null;
+const files = [...walk(OUTPUT)].filter(keep).map((p) => ({ p, key: path.relative(OUTPUT, p).split(path.sep).join('/'), size: fs.statSync(p).size, mtime: fs.statSync(p).mtimeMs }));
 console.log(`共 ${files.length} 個檔案，檢查哪些需要上傳…`);
 
 let up = 0, skip = 0, i = 0, bytes = 0;
@@ -49,7 +52,9 @@ async function work() {
     const f = files[i++];
     try {
       const h = await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: f.key }));
-      if (h.ContentLength === f.size) { skip++; continue; }
+      // 大小相同、且（若有記錄）修改時間相同才跳過；--force 指定的相簿一律重傳
+      const sameMtime = h.Metadata?.mtime === undefined || h.Metadata.mtime === String(Math.round(f.mtime));
+      if (!(forceSlug && f.key.startsWith(forceSlug + '/')) && h.ContentLength === f.size && sameMtime) { skip++; continue; }
     } catch {}
     const isDownload = /\/original\//.test(f.key) || f.key.endsWith('.zip');
     const name = path.basename(f.p);
@@ -59,6 +64,7 @@ async function work() {
         Bucket: R2_BUCKET, Key: f.key, Body: fs.createReadStream(f.p),
         ContentType: TYPES[path.extname(f.p).toLowerCase()] || 'application/octet-stream',
         CacheControl: 'public, max-age=31536000, immutable',
+        Metadata: { mtime: String(Math.round(f.mtime)) },
         // 原檔與 ZIP：瀏覽器點下去直接下載，而不是在分頁開啟
         ...(isDownload && { ContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(name)}` }),
       },

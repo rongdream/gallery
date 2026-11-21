@@ -54,6 +54,8 @@ async function publish() {
 }
 
 http.createServer((req, res) => {
+  // 只接受以 localhost / 127.0.0.1 為主機名稱的請求，防止 DNS rebinding（惡意網站把網域指向你的電腦來讀取資料）
+  if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) { res.writeHead(403); return res.end('forbidden host'); }
   const u = new URL(req.url, 'http://x');
   if (req.method === 'POST') {
     // 只接受從本機預覽頁面發出的請求，避免其他網站偷偷呼叫
